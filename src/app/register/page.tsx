@@ -4,164 +4,177 @@ import { useState } from "react";
 
 const css = `
   :root {
-    --bg: #0a0a0f;
-    --surface: #12121a;
-    --border: #2a2a3a;
-    --text: #e8e8f0;
-    --text-muted: #8888a0;
-    --accent: #6c5ce7;
-    --accent-glow: #7c6cf7;
-    --accent-light: rgba(108,92,231,0.15);
-    --success: #00cec9;
-    --danger: #ff6b6b;
+    --page-bg-subtle: #faf6e8;
+    --text-primary: #524936;
+    --text-secondary: #8a7b65;
+    --terracotta: #BF7048;
+    --terracotta-hover: #d4885c;
+    --olive: #B0A761;
+    --olive-hover: #9e9655;
+    --card-bg: #FFFFFF;
+    --card-border: rgba(82,73,54,0.12);
+    --input-border: rgba(82,73,54,0.15);
+    --btn-danger-text: #c0392b;
   }
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: 'Outfit', sans-serif;
+    background: var(--page-bg-subtle);
+    color: var(--text-primary);
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
     min-height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 20px;
-    position: relative;
-  }
-  body::before {
-    content: '';
-    position: fixed;
-    top: -30%;
-    left: -20%;
-    width: 80vw;
-    height: 80vw;
-    background: radial-gradient(circle, rgba(108,92,231,0.08) 0%, transparent 70%);
-    pointer-events: none;
-  }
-  body::after {
-    content: '';
-    position: fixed;
-    bottom: -20%;
-    right: -10%;
-    width: 60vw;
-    height: 60vw;
-    background: radial-gradient(circle, rgba(0,206,201,0.06) 0%, transparent 70%);
-    pointer-events: none;
+    padding: 24px 16px;
   }
   .card {
-    position: relative;
-    z-index: 1;
     width: 100%;
     max-width: 420px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 36px 32px;
+    background: var(--card-bg);
+    border: 0.5px solid var(--card-border);
+    border-radius: 18px;
+    padding: 36px 28px;
+    box-shadow: 0 4px 24px rgba(82,73,54,0.10);
   }
-  .logo { font-size: 2.5rem; text-align: center; margin-bottom: 8px; }
-  h1 {
+  .brand {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 28px;
     text-align: center;
-    font-size: 1.6rem;
-    font-weight: 700;
-    margin-bottom: 4px;
   }
-  h1 span { color: var(--accent); }
-  .sub {
-    text-align: center;
-    color: var(--text-muted);
-    font-size: 0.9rem;
-    margin-bottom: 32px;
+  .brand-logo {
+    width: 110px;
+    height: auto;
+    display: block;
+    margin-bottom: 6px;
+  }
+  .brand-name {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--terracotta);
+    letter-spacing: 0.04em;
+  }
+  .brand-sub {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
   }
   label {
     display: block;
-    font-size: 0.85rem;
-    color: var(--text-muted);
-    margin-bottom: 6px;
-    font-weight: 500;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 5px;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
   }
   input {
     width: 100%;
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 12px;
+    background: var(--page-bg-subtle);
+    border: 0.5px solid var(--input-border);
+    border-radius: 9px;
     padding: 14px 16px;
-    color: var(--text);
-    font-family: 'Outfit', sans-serif;
-    font-size: 1rem;
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 15px;
     outline: none;
-    transition: border-color 0.2s, box-shadow 0.2s;
+    transition: border-color 0.18s, box-shadow 0.18s;
     margin-bottom: 16px;
   }
+  input::placeholder { color: var(--text-secondary); }
   input:focus {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px var(--accent-light);
+    border-color: var(--terracotta);
+    box-shadow: 0 0 0 3px rgba(191,112,72,0.15);
   }
-  input::placeholder { color: var(--text-muted); }
   .btn {
     width: 100%;
-    padding: 16px;
+    padding: 15px;
     border: none;
-    border-radius: 12px;
-    background: var(--accent);
+    border-radius: 10px;
+    background: var(--olive);
     color: #fff;
-    font-family: 'Outfit', sans-serif;
-    font-size: 1rem;
+    font-family: inherit;
+    font-size: 15px;
     font-weight: 700;
     cursor: pointer;
-    transition: all 0.2s;
-    letter-spacing: 0.3px;
+    transition: all 0.18s;
+    letter-spacing: 0.02em;
     margin-top: 4px;
   }
   .btn:hover:not(:disabled) {
-    background: var(--accent-glow);
+    background: var(--olive-hover);
     transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(108,92,231,0.4);
+    box-shadow: 0 8px 24px rgba(176,167,97,0.35);
   }
   .btn:active:not(:disabled) { transform: translateY(0); }
   .btn:disabled { opacity: 0.5; cursor: not-allowed; }
   .error {
-    background: rgba(255,107,107,0.1);
-    border: 1px solid rgba(255,107,107,0.3);
-    color: var(--danger);
-    border-radius: 10px;
-    padding: 12px 16px;
-    font-size: 0.9rem;
-    margin-top: 16px;
+    background: rgba(192,57,43,0.07);
+    border: 0.5px solid rgba(192,57,43,0.2);
+    color: var(--btn-danger-text);
+    border-radius: 9px;
+    padding: 12px 14px;
+    font-size: 13px;
+    margin-top: 14px;
   }
   .success-wrap {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 16px;
+    gap: 18px;
     text-align: center;
     animation: fadeIn 0.4s ease;
   }
-  @keyframes fadeIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+  @keyframes fadeIn { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
   .check-circle {
-    width: 80px;
-    height: 80px;
+    width: 72px;
+    height: 72px;
     border-radius: 50%;
-    background: rgba(0,206,201,0.15);
-    border: 2px solid var(--success);
+    background: var(--olive);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 2.5rem;
+    font-size: 2rem;
+    color: #fff;
   }
   .success-title {
-    font-size: 1.4rem;
-    font-weight: 700;
-    color: var(--success);
+    font-size: 20px;
+    font-weight: 800;
+    color: var(--text-primary);
   }
-  .success-sub { color: var(--text-muted); font-size: 0.95rem; line-height: 1.5; }
+  .success-sub {
+    color: var(--text-secondary);
+    font-size: 14px;
+    line-height: 1.55;
+  }
   .code-box {
-    background: var(--accent-light);
-    border: 2px solid var(--accent);
-    border-radius: 14px;
-    padding: 16px 32px;
+    background: var(--page-bg-subtle);
+    border: 1.5px solid var(--terracotta);
+    border-radius: 12px;
+    padding: 18px 36px;
     text-align: center;
+    width: 100%;
   }
-  .code-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 4px; }
-  .code-num { font-family: 'Space Mono', monospace; font-size: 3rem; font-weight: 700; color: var(--accent-glow); letter-spacing: 8px; }
+  .code-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-bottom: 5px;
+  }
+  .code-num {
+    font-family: 'Geist Mono', 'Courier New', monospace;
+    font-size: 3.2rem;
+    font-weight: 700;
+    color: var(--terracotta);
+    letter-spacing: 10px;
+    line-height: 1;
+  }
 `;
 
 export default function RegisterPage() {
@@ -204,7 +217,7 @@ export default function RegisterPage() {
       <div className="card">
         {code ? (
           <div className="success-wrap">
-            <div className="check-circle">✅</div>
+            <div className="check-circle">✓</div>
             <div className="success-title">Sikeres regisztráció!</div>
             <div className="code-box">
               <div className="code-label">A te kódod</div>
@@ -217,11 +230,13 @@ export default function RegisterPage() {
           </div>
         ) : (
           <>
-            <div className="logo">🎲</div>
-            <h1>Esemény <span>Sorsoló</span></h1>
-            <p className="sub">Regisztrálj a nyereményjátékhoz!</p>
+            <div className="brand">
+              <img src="/logo/logo.png" alt="BÁZIS" className="brand-logo" />
+              <div className="brand-name">BÁZIS</div>
+              <div className="brand-sub">Regisztráció</div>
+            </div>
             <form onSubmit={handleSubmit}>
-              <label htmlFor="name">Neved *</label>
+              <label htmlFor="name">Neved</label>
               <input
                 id="name"
                 type="text"
