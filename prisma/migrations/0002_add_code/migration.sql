@@ -1,0 +1,1 @@
+ALTER TABLE "Participant" ADD COLUMN "code" TEXT NOT NULL DEFAULT '';
