@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Esemény Sorsoló</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Space+Mono:wght@400;700&display=swap');
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface-hover: #1a1a26;
+    --border: #2a2a3a;
+    --text: #e8e8f0;
+    --text-muted: #8888a0;
+    --accent: #6c5ce7;
+    --accent-glow: #7c6cf7;
+    --accent-light: rgba(108, 92, 231, 0.15);
+    --success: #00cec9;
+    --success-glow: #00e0db;
+    --warning: #fdcb6e;
+    --danger: #ff6b6b;
+    --radius: 16px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Outfit', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Ambient background */
+  body::before {
+    content: '';
+    position: fixed;
+    top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background: radial-gradient(ellipse at 30% 20%, rgba(108,92,231,0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 70% 80%, rgba(0,206,201,0.06) 0%, transparent 50%);
+    animation: ambientDrift 20s ease-in-out infinite alternate;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  @keyframes ambientDrift {
+    0% { transform: translate(0, 0) rotate(0deg); }
+    100% { transform: translate(-3%, 3%) rotate(2deg); }
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 40px 24px;
+  }
+
+  /* Header */
+  .header {
+    text-align: center;
+    margin-bottom: 48px;
+  }
+
+  .header h1 {
+    font-size: clamp(2rem, 5vw, 3.2rem);
+    font-weight: 900;
+    letter-spacing: -0.03em;
+    background: linear-gradient(135deg, var(--text), var(--accent-glow));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 8px;
+  }
+
+  .header p {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    letter-spacing: 0.05em;
+  }
+
+  /* Tabs */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 4px;
+    margin-bottom: 32px;
+    max-width: 500px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .tab {
+    flex: 1;
+    padding: 12px 16px;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    font-family: 'Outfit', sans-serif;
+    font-weight: 600;
+    font-size: 0.95rem;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .tab:hover { color: var(--text); background: var(--surface-hover); }
+
+  .tab.active {
+    background: var(--accent);
+    color: #fff;
+    box-shadow: 0 4px 20px rgba(108, 92, 231, 0.4);
+  }
+
+  .tab-content { display: none; animation: fadeUp 0.4s ease; }
+  .tab-content.active { display: block; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Cards */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 32px;
+    margin-bottom: 24px;
+    transition: border-color 0.3s;
+  }
+
+  .card:hover { border-color: rgba(108, 92, 231, 0.3); }
+
+  .card-title {
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .card-title .icon {
+    width: 36px; height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--accent-light);
+    border-radius: 10px;
+    font-size: 1.1rem;
+  }
+
+  /* QR section */
+  .qr-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+  }
+
+  .qr-box {
+    background: #fff;
+    padding: 20px;
+    border-radius: 16px;
+    box-shadow: 0 8px 40px rgba(108, 92, 231, 0.2);
+    position: relative;
+  }
+
+  .qr-box::after {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: 18px;
+    background: linear-gradient(135deg, var(--accent), var(--success));
+    z-index: -1;
+  }
+
+  .url-display {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    background: var(--bg);
+    padding: 10px 16px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    word-break: break-all;
+    max-width: 100%;
+    text-align: center;
+  }
+
+  .url-input-group {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+    max-width: 500px;
+  }
+
+  .url-input-group input {
+    flex: 1;
+    padding: 12px 16px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.85rem;
+    outline: none;
+    transition: border-color 0.3s;
+  }
+
+  .url-input-group input:focus { border-color: var(--accent); }
+
+  /* Buttons */
+  .btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 10px;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: #fff;
+    box-shadow: 0 4px 16px rgba(108, 92, 231, 0.3);
+  }
+  .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 24px rgba(108, 92, 231, 0.5);
+    background: var(--accent-glow);
+  }
+
+  .btn-success {
+    background: var(--success);
+    color: #0a0a0f;
+    box-shadow: 0 4px 16px rgba(0, 206, 201, 0.3);
+  }
+  .btn-success:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 24px rgba(0, 206, 201, 0.5);
+    background: var(--success-glow);
+  }
+
+  .btn-outline {
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-outline:hover {
+    background: var(--surface-hover);
+    border-color: var(--accent);
+  }
+
+  .btn-danger {
+    background: rgba(255, 107, 107, 0.15);
+    color: var(--danger);
+    border: 1px solid rgba(255, 107, 107, 0.2);
+  }
+  .btn-danger:hover { background: rgba(255, 107, 107, 0.25); }
+
+  /* Form */
+  .form-group { margin-bottom: 16px; }
+
+  .form-group label {
+    display: block;
+    font-weight: 500;
+    margin-bottom: 6px;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+  }
+
+  .form-group input {
+    width: 100%;
+    padding: 12px 16px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: 'Outfit', sans-serif;
+    font-size: 1rem;
+    outline: none;
+    transition: all 0.3s;
+  }
+
+  .form-group input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-light);
+  }
+
+  /* Participants list */
+  .participants-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 10px;
+    margin-top: 16px;
+  }
+
+  .participant-chip {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-size: 0.9rem;
+    transition: all 0.3s;
+    animation: chipIn 0.3s ease;
+  }
+
+  @keyframes chipIn {
+    from { opacity: 0; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  .participant-chip .avatar {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, var(--accent), var(--success));
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700;
+    font-size: 0.8rem;
+    color: #fff;
+    flex-shrink: 0;
+  }
+
+  .participant-chip .info { flex: 1; min-width: 0; }
+  .participant-chip .name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .participant-chip .email { font-size: 0.75rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .participant-chip .remove {
+    background: none; border: none; color: var(--text-muted);
+    cursor: pointer; font-size: 1.1rem; padding: 2px;
+    transition: color 0.2s;
+  }
+  .participant-chip .remove:hover { color: var(--danger); }
+
+  /* Stats bar */
+  .stats-bar {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+
+  .stat {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: var(--bg);
+    border-radius: 10px;
+    font-family: 'Space Mono', monospace;
+    font-size: 0.85rem;
+  }
+
+  .stat .num {
+    font-weight: 700;
+    color: var(--accent-glow);
+    font-size: 1.2rem;
+  }
+
+  /* Raffle */
+  .raffle-area {
+    text-align: center;
+    padding: 40px 20px;
+  }
+
+  .raffle-btn {
+    padding: 20px 48px;
+    font-size: 1.3rem;
+    border-radius: 16px;
+    background: linear-gradient(135deg, var(--accent), #8b5cf6);
+    color: #fff;
+    border: none;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: 0 8px 32px rgba(108, 92, 231, 0.4);
+    transition: all 0.3s;
+    letter-spacing: 0.02em;
+  }
+
+  .raffle-btn:hover {
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 12px 48px rgba(108, 92, 231, 0.6);
+  }
+
+  .raffle-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none !important;
+    box-shadow: none !important;
+  }
+
+  /* Winner display */
+  .winner-display {
+    display: none;
+    margin-top: 32px;
+    animation: winnerReveal 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+
+  .winner-display.show { display: block; }
+
+  @keyframes winnerReveal {
+    from { opacity: 0; transform: scale(0.5) rotate(-5deg); }
+    to { opacity: 1; transform: scale(1) rotate(0deg); }
+  }
+
+  .winner-card {
+    display: inline-block;
+    padding: 32px 48px;
+    background: linear-gradient(135deg, rgba(108,92,231,0.2), rgba(0,206,201,0.2));
+    border: 2px solid var(--accent);
+    border-radius: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .winner-card::before {
+    content: '🎉';
+    position: absolute;
+    top: -10px; left: -10px;
+    font-size: 3rem;
+    opacity: 0.3;
+    animation: confettiFloat 3s ease-in-out infinite;
+  }
+
+  .winner-card::after {
+    content: '🎊';
+    position: absolute;
+    bottom: -10px; right: -10px;
+    font-size: 3rem;
+    opacity: 0.3;
+    animation: confettiFloat 3s ease-in-out infinite reverse;
+  }
+
+  @keyframes confettiFloat {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-8px) rotate(10deg); }
+  }
+
+  .winner-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--success);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .winner-name {
+    font-size: 2rem;
+    font-weight: 900;
+    background: linear-gradient(135deg, #fff, var(--success-glow));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .winner-email {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+  /* Shuffle animation */
+  .shuffle-display {
+    display: none;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--accent-glow);
+    margin-top: 24px;
+    min-height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .shuffle-display.active {
+    display: flex;
+    animation: shufflePulse 0.15s ease-in-out infinite alternate;
+  }
+
+  @keyframes shufflePulse {
+    from { opacity: 0.6; transform: scale(0.98); }
+    to { opacity: 1; transform: scale(1.02); }
+  }
+
+  /* Registration page (separate view) */
+  .reg-page {
+    display: none;
+    max-width: 420px;
+    margin: 0 auto;
+    padding: 60px 24px;
+    text-align: center;
+  }
+
+  .reg-page .logo {
+    font-size: 2.4rem;
+    font-weight: 900;
+    background: linear-gradient(135deg, var(--text), var(--accent-glow));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 8px;
+  }
+
+  .reg-page .subtitle {
+    font-family: 'Space Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-bottom: 32px;
+  }
+
+  .reg-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 32px;
+    text-align: left;
+  }
+
+  .success-msg {
+    display: none;
+    text-align: center;
+    padding: 40px;
+  }
+
+  .success-msg .check {
+    width: 64px; height: 64px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--success), #00b894);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2rem;
+    margin: 0 auto 16px;
+    animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  }
+
+  @keyframes popIn {
+    from { transform: scale(0); }
+    to { transform: scale(1); }
+  }
+
+  .success-msg h3 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+
+  .success-msg p { color: var(--text-muted); }
+
+  /* Winners history */
+  .winners-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 16px;
+  }
+
+  .winner-history-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: var(--bg);
+    border-radius: 10px;
+    border: 1px solid var(--border);
+  }
+
+  .winner-history-item .rank {
+    font-family: 'Space Mono', monospace;
+    font-weight: 700;
+    color: var(--warning);
+    font-size: 0.85rem;
+    min-width: 28px;
+  }
+
+  .btn-group {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 16px;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 40px;
+    color: var(--text-muted);
+  }
+
+  .empty-state .emoji { font-size: 2.5rem; margin-bottom: 12px; }
+
+  /* Responsive */
+  @media (max-width: 600px) {
+    .container { padding: 24px 16px; }
+    .card { padding: 20px; }
+    .tabs { max-width: 100%; }
+    .participants-grid { grid-template-columns: 1fr; }
+    .raffle-btn { padding: 16px 32px; font-size: 1.1rem; }
+    .winner-name { font-size: 1.5rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ADMIN VIEW -->
+<div id="adminView" class="container">
+  <div class="header">
+    <h1>🎲 Esemény Sorsoló</h1>
+    <p>QR kód · Regisztráció · Sorsolás</p>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('qr')">📱 QR Kód</button>
+    <button class="tab" onclick="switchTab('participants')">👥 Résztvevők</button>
+    <button class="tab" onclick="switchTab('raffle')">🎲 Sorsolás</button>
+  </div>
+
+  <!-- QR TAB -->
+  <div id="tab-qr" class="tab-content active">
+    <div class="card">
+      <div class="card-title"><span class="icon">📱</span> Regisztrációs QR Kód</div>
+      <p style="color:var(--text-muted); margin-bottom:20px; font-size:0.9rem;">
+        Állítsd be az URL-t ahol az alkalmazás fut, és generálj QR kódot. A jelenlévők a QR kód beolvasásával regisztrálhatnak.
+      </p>
+      <div class="qr-wrapper">
+        <div class="url-input-group">
+          <input type="text" id="baseUrl" placeholder="https://pelda.hu/regisztracio" value="">
+          <button class="btn btn-primary" onclick="generateQR()">QR Generálás</button>
+        </div>
+        <div id="qrCode" class="qr-box" style="display:none;"></div>
+        <div id="qrUrl" class="url-display" style="display:none;"></div>
+        <p style="color:var(--text-muted); font-size:0.8rem; text-align:center; max-width:400px;">
+          💡 <strong>Tipp:</strong> Nyisd meg ezt a fájlt egy szerveren, majd add meg az URL-t fentebb. A QR a <code>#register</code> hash-szel nyitja meg a regisztrációs oldalt.
+        </p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="icon">✍️</span> Manuális hozzáadás</div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap;">
+        <input type="text" id="manualName" placeholder="Név" style="flex:1; min-width:150px; padding:10px 14px; background:var(--bg); border:1px solid var(--border); border-radius:10px; color:var(--text); font-family:'Outfit',sans-serif; outline:none;">
+        <input type="email" id="manualEmail" placeholder="E-mail (opcionális)" style="flex:1; min-width:150px; padding:10px 14px; background:var(--bg); border:1px solid var(--border); border-radius:10px; color:var(--text); font-family:'Outfit',sans-serif; outline:none;">
+        <button class="btn btn-success" onclick="addManual()">+ Hozzáad</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PARTICIPANTS TAB -->
+  <div id="tab-participants" class="tab-content">
+    <div class="card">
+      <div class="card-title"><span class="icon">👥</span> Regisztrált Résztvevők</div>
+      <div class="stats-bar">
+        <div class="stat"><span class="num" id="totalCount">0</span> fő regisztrált</div>
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-outline" onclick="exportCSV()">📥 Exportálás CSV</button>
+        <button class="btn btn-danger" onclick="clearAll()">🗑️ Összes törlése</button>
+      </div>
+      <div id="participantsList" class="participants-grid"></div>
+      <div id="emptyParticipants" class="empty-state">
+        <div class="emoji">👻</div>
+        <p>Még senki sem regisztrált.<br>Oszd meg a QR kódot vagy adj hozzá manuálisan!</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- RAFFLE TAB -->
+  <div id="tab-raffle" class="tab-content">
+    <div class="card">
+      <div class="card-title"><span class="icon">🎲</span> Sorsolás</div>
+      <div class="raffle-area">
+        <button class="raffle-btn" id="raffleBtn" onclick="startRaffle()" disabled>
+          🎰 SORSOLÁS INDÍTÁSA
+        </button>
+        <div id="shuffleDisplay" class="shuffle-display"></div>
+        <div id="winnerDisplay" class="winner-display">
+          <div class="winner-card">
+            <div class="winner-label">★ A nyertes ★</div>
+            <div class="winner-name" id="winnerName"></div>
+            <div class="winner-email" id="winnerEmail"></div>
+          </div>
+        </div>
+
+        <div class="btn-group" style="justify-content:center; margin-top:24px;">
+          <label style="display:flex; align-items:center; gap:8px; font-size:0.9rem; color:var(--text-muted);">
+            <input type="checkbox" id="excludeWinners" checked> Korábbi nyertesek kizárása
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="winnersHistoryCard" style="display:none;">
+      <div class="card-title"><span class="icon">🏆</span> Korábbi nyertesek</div>
+      <div id="winnersHistory" class="winners-list"></div>
+      <div class="btn-group">
+        <button class="btn btn-outline" onclick="clearWinners()">Nyerteslista törlése</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- REGISTRATION VIEW (for participants scanning QR) -->
+<div id="registerView" class="reg-page">
+  <div class="logo">🎲 Esemény Sorsoló</div>
+  <div class="subtitle">Regisztráció</div>
+
+  <div id="regForm" class="reg-card">
+    <div class="form-group">
+      <label>Neved *</label>
+      <input type="text" id="regName" placeholder="Írd be a neved" required>
+    </div>
+    <div class="form-group">
+      <label>E-mail (opcionális)</label>
+      <input type="email" id="regEmail" placeholder="pelda@email.hu">
+    </div>
+    <button class="btn btn-success" style="width:100%; justify-content:center; margin-top:8px;" onclick="submitRegistration()">
+      ✅ Regisztrálok
+    </button>
+  </div>
+
+  <div id="regSuccess" class="success-msg">
+    <div class="check">✓</div>
+    <h3>Sikeres regisztráció!</h3>
+    <p>Powerlök drukkolunk a sorsolásnál! 🤞</p>
+  </div>
+</div>
+
+<script>
+  // ─── State ───
+  let participants = JSON.parse(localStorage.getItem('raffle_participants') || '[]');
+  let winners = JSON.parse(localStorage.getItem('raffle_winners') || '[]');
+
+  // ─── Routing ───
+  function route() {
+    if (window.location.hash === '#register') {
+      document.getElementById('adminView').style.display = 'none';
+      document.getElementById('registerView').style.display = 'block';
+    } else {
+      document.getElementById('adminView').style.display = 'block';
+      document.getElementById('registerView').style.display = 'none';
+      renderParticipants();
+      renderWinners();
+      updateRaffleBtn();
+    }
+  }
+
+  window.addEventListener('hashchange', route);
+  route();
+
+  // ─── Tabs ───
+  function switchTab(id) {
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('tab-' + id).classList.add('active');
+    event.target.classList.add('active');
+    if (id === 'participants') renderParticipants();
+    if (id === 'raffle') { renderWinners(); updateRaffleBtn(); }
+  }
+
+  // ─── QR ───
+  function generateQR() {
+    const base = document.getElementById('baseUrl').value.trim();
+    if (!base) { alert('Add meg az URL-t!'); return; }
+    const url = base + (base.includes('#') ? '' : '#register');
+    const container = document.getElementById('qrCode');
+    container.innerHTML = '';
+    container.style.display = 'block';
+    new QRCode(container, {
+      text: url,
+      width: 220,
+      height: 220,
+      colorDark: '#1a1a2e',
+      colorLight: '#ffffff',
+      correctLevel: QRCode.CorrectLevel.H
+    });
+    const urlDisplay = document.getElementById('qrUrl');
+    urlDisplay.style.display = 'block';
+    urlDisplay.textContent = url;
+  }
+
+  // ─── Registration (participant side) ───
+  function submitRegistration() {
+    const name = document.getElementById('regName').value.trim();
+    const email = document.getElementById('regEmail').value.trim();
+    if (!name) { alert('Kérlek add meg a neved!'); return; }
+
+    const entry = { id: Date.now().toString(36), name, email, time: new Date().toISOString() };
+    participants.push(entry);
+    save();
+
+    document.getElementById('regForm').style.display = 'none';
+    document.getElementById('regSuccess').style.display = 'block';
+  }
+
+  // ─── Manual add ───
+  function addManual() {
+    const name = document.getElementById('manualName').value.trim();
+    const email = document.getElementById('manualEmail').value.trim();
+    if (!name) { alert('Add meg a nevet!'); return; }
+
+    participants.push({ id: Date.now().toString(36), name, email, time: new Date().toISOString() });
+    save();
+    renderParticipants();
+    updateRaffleBtn();
+
+    document.getElementById('manualName').value = '';
+    document.getElementById('manualEmail').value = '';
+  }
+
+  // ─── Render participants ───
+  function renderParticipants() {
+    const grid = document.getElementById('participantsList');
+    const empty = document.getElementById('emptyParticipants');
+    document.getElementById('totalCount').textContent = participants.length;
+
+    if (participants.length === 0) {
+      grid.innerHTML = '';
+      empty.style.display = 'block';
+      return;
+    }
+
+    empty.style.display = 'none';
+    grid.innerHTML = participants.map((p, i) => `
+      <div class="participant-chip">
+        <div class="avatar">${p.name.charAt(0).toUpperCase()}</div>
+        <div class="info">
+          <div class="name">${esc(p.name)}</div>
+          ${p.email ? `<div class="email">${esc(p.email)}</div>` : ''}
+        </div>
+        <button class="remove" onclick="removeParticipant(${i})" title="Eltávolítás">✕</button>
+      </div>
+    `).join('');
+  }
+
+  function removeParticipant(index) {
+    participants.splice(index, 1);
+    save();
+    renderParticipants();
+    updateRaffleBtn();
+  }
+
+  // ─── Raffle ───
+  function updateRaffleBtn() {
+    const eligible = getEligible();
+    const btn = document.getElementById('raffleBtn');
+    btn.disabled = eligible.length === 0;
+    if (eligible.length === 0 && participants.length > 0) {
+      btn.textContent = '🚫 Mindenki nyert már!';
+    } else {
+      btn.textContent = `🎰 SORSOLÁS (${eligible.length} fő)`;
+    }
+  }
+
+  function getEligible() {
+    const exclude = document.getElementById('excludeWinners').checked;
+    if (!exclude) return [...participants];
+    const winnerIds = new Set(winners.map(w => w.id));
+    return participants.filter(p => !winnerIds.has(p.id));
+  }
+
+  function startRaffle() {
+    const eligible = getEligible();
+    if (eligible.length === 0) return;
+
+    const btn = document.getElementById('raffleBtn');
+    const shuffleEl = document.getElementById('shuffleDisplay');
+    const winnerEl = document.getElementById('winnerDisplay');
+
+    btn.disabled = true;
+    winnerEl.classList.remove('show');
+    shuffleEl.classList.add('active');
+    shuffleEl.style.display = 'flex';
+
+    // Shuffle animation
+    let count = 0;
+    const maxCount = 25 + Math.floor(Math.random() * 15);
+    const interval = setInterval(() => {
+      const rand = eligible[Math.floor(Math.random() * eligible.length)];
+      shuffleEl.textContent = rand.name;
+      count++;
+
+      if (count >= maxCount) {
+        clearInterval(interval);
+
+        // Pick winner
+        const winner = eligible[Math.floor(Math.random() * eligible.length)];
+        winners.push(winner);
+        save();
+
+        shuffleEl.classList.remove('active');
+        shuffleEl.style.display = 'none';
+
+        document.getElementById('winnerName').textContent = winner.name;
+        document.getElementById('winnerEmail').textContent = winner.email || '';
+        winnerEl.classList.add('show');
+
+        renderWinners();
+        updateRaffleBtn();
+      }
+    }, 80 + count * 3);
+  }
+
+  // ─── Winners history ───
+  function renderWinners() {
+    const card = document.getElementById('winnersHistoryCard');
+    const list = document.getElementById('winnersHistory');
+
+    if (winners.length === 0) {
+      card.style.display = 'none';
+      return;
+    }
+
+    card.style.display = 'block';
+    list.innerHTML = winners.map((w, i) => `
+      <div class="winner-history-item">
+        <span class="rank">#${i + 1}</span>
+        <div class="avatar" style="width:28px;height:28px;border-radius:7px;background:linear-gradient(135deg,var(--accent),var(--success));display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.7rem;color:#fff;flex-shrink:0;">${w.name.charAt(0).toUpperCase()}</div>
+        <span style="flex:1;font-weight:600;">${esc(w.name)}</span>
+        ${w.email ? `<span style="color:var(--text-muted);font-size:0.8rem;">${esc(w.email)}</span>` : ''}
+      </div>
+    `).join('');
+  }
+
+  function clearWinners() {
+    if (!confirm('Biztosan törlöd a nyerteslistát?')) return;
+    winners = [];
+    save();
+    renderWinners();
+    updateRaffleBtn();
+    document.getElementById('winnerDisplay').classList.remove('show');
+  }
+
+  // ─── Export ───
+  function exportCSV() {
+    if (participants.length === 0) { alert('Nincs regisztrált résztvevő!'); return; }
+    let csv = 'Név,E-mail,Regisztráció ideje\n';
+    participants.forEach(p => {
+      csv += `"${p.name}","${p.email || ''}","${p.time}"\n`;
+    });
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `resztvevok_${new Date().toISOString().slice(0,10)}.csv`;
+    link.click();
+  }
+
+  // ─── Clear all ───
+  function clearAll() {
+    if (!confirm('Biztosan törlöd az összes résztvevőt?')) return;
+    participants = [];
+    winners = [];
+    save();
+    renderParticipants();
+    renderWinners();
+    updateRaffleBtn();
+  }
+
+  // ─── Helpers ───
+  function save() {
+    localStorage.setItem('raffle_participants', JSON.stringify(participants));
+    localStorage.setItem('raffle_winners', JSON.stringify(winners));
+  }
+
+  function esc(str) {
+    const d = document.createElement('div');
+    d.textContent = str;
+    return d.innerHTML;
+  }
+
+  // ─── Periodic refresh for admin (pick up new registrations) ───
+  setInterval(() => {
+    if (window.location.hash !== '#register') {
+      participants = JSON.parse(localStorage.getItem('raffle_participants') || '[]');
+      winners = JSON.parse(localStorage.getItem('raffle_winners') || '[]');
+      renderParticipants();
+      renderWinners();
+      updateRaffleBtn();
+    }
+  }, 3000);
+
+  // Checkbox event
+  document.getElementById('excludeWinners').addEventListener('change', updateRaffleBtn);
+</script>
+</body>
+</html>
