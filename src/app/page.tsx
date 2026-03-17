@@ -388,6 +388,7 @@ export default function AdminPage() {
   const [eventName, setEventName] = useState("");
   const [mounted, setMounted] = useState(false);
   const [qrGenerated, setQrGenerated] = useState(false);
+  const [currentRoundUrl, setCurrentRoundUrl] = useState("");
   const [isRaffling, setIsRaffling] = useState(false);
   const [shuffleName, setShuffleName] = useState<string | null>(null);
   const [latestWinner, setLatestWinner] = useState<Participant | null>(null);
@@ -418,11 +419,14 @@ export default function AdminPage() {
     ]);
     setLatestWinner(null);
     fetchAll();
-    await QRCode.toCanvas(qrCanvasRef.current, `${baseUrl}/register`, {
+    const roundId = Date.now().toString();
+    const registerUrl = `${baseUrl}/register?r=${roundId}`;
+    await QRCode.toCanvas(qrCanvasRef.current, registerUrl, {
       width: 340,
       margin: 2,
       color: { dark: "#000000", light: "#ffffff" },
     });
+    setCurrentRoundUrl(registerUrl);
     setQrGenerated(true);
   };
 
@@ -548,7 +552,7 @@ export default function AdminPage() {
                 <div className="qr-frame">
                   <canvas ref={qrCanvasRef} />
                 </div>
-                <div className="qr-url">{baseUrl}/register</div>
+                <div className="qr-url">{currentRoundUrl}</div>
               </div>
             )}
           </div>

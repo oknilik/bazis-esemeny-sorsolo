@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 
 const css = `
   :root {
@@ -175,13 +176,45 @@ const css = `
     letter-spacing: 10px;
     line-height: 1;
   }
+  .already-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    text-align: center;
+    animation: fadeIn 0.4s ease;
+  }
+  .already-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: rgba(191,112,72,0.12);
+    border: 1.5px solid var(--terracotta);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+  }
+  .already-title { font-size: 18px; font-weight: 800; color: var(--text-primary); }
+  .already-sub { color: var(--text-secondary); font-size: 14px; line-height: 1.5; }
 `;
 
-export default function RegisterPage() {
+function RegisterForm() {
+  const searchParams = useSearchParams();
+  const roundId = searchParams.get("r") ?? "";
+  const storageKey = `sorsolo_round_${roundId}`;
+
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [code, setCode] = useState<string | null>(null);
+  const [alreadyRegistered, setAlreadyRegistered] = useState(false);
+
+  useEffect(() => {
+    if (roundId && localStorage.getItem(storageKey)) {
+      setAlreadyRegistered(true);
+    }
+  }, [roundId, storageKey]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -199,6 +232,7 @@ export default function RegisterPage() {
       });
       if (res.ok) {
         const data = await res.json();
+        if (roundId) localStorage.setItem(storageKey, "1");
         setCode(data.code);
       } else {
         const d = await res.json();
@@ -215,7 +249,15 @@ export default function RegisterPage() {
     <>
       <style dangerouslySetInnerHTML={{ __html: css }} />
       <div className="card">
-        {code ? (
+        {alreadyRegistered && !code ? (
+          <div className="already-wrap">
+            <div className="already-icon">🔒</div>
+            <div className="already-title">Már regisztráltál!</div>
+            <div className="already-sub">
+              Ezen az eszközön már leadtál egy regisztrációt ehhez a sorsoláshoz.
+            </div>
+          </div>
+        ) : code ? (
           <div className="success-wrap">
             <div className="check-circle">✓</div>
             <div className="success-title">Sikeres regisztráció!</div>
@@ -256,5 +298,13 @@ export default function RegisterPage() {
         )}
       </div>
     </>
+  );
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense>
+      <RegisterForm />
+    </Suspense>
   );
 }
