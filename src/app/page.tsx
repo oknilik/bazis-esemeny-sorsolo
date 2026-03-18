@@ -52,15 +52,15 @@ const css = `
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: 32px 20px 24px;
+    padding: 48px 20px 36px;
     text-align: center;
     gap: 2px;
   }
   .header-logo {
-    width: 240px;
+    width: 290px;
     height: auto;
     display: block;
-    margin-bottom: 2px;
+    margin-bottom: 14px;
   }
   .header-title {
     font-size: 15px;
@@ -144,6 +144,7 @@ const css = `
     color: var(--text-primary);
     font-family: inherit;
     font-size: 14px;
+    font-weight: 600;
     outline: none;
     transition: border-color 0.18s, box-shadow 0.18s;
     margin-bottom: 12px;
@@ -411,6 +412,16 @@ export default function AdminPage() {
     return () => clearInterval(id);
   }, [fetchAll]);
 
+  useEffect(() => {
+    if (tab === "qr" && qrGenerated && currentRoundUrl && qrCanvasRef.current) {
+      QRCode.toCanvas(qrCanvasRef.current, currentRoundUrl, {
+        width: 340,
+        margin: 2,
+        color: { dark: "#000000", light: "#ffffff" },
+      });
+    }
+  }, [tab, qrGenerated, currentRoundUrl]);
+
   const generateQr = async () => {
     if (!qrCanvasRef.current) return;
     await Promise.all([
@@ -443,32 +454,17 @@ export default function AdminPage() {
 
   const exportCsv = () => {
     const bom = "\ufeff";
-    const header = "Kód,Név,Regisztrálva\n";
+    const header = "Kód,Név,Regisztrálva,Nyertes\n";
+    const winnerIds = new Set(winners.map((w) => w.id));
     const rows = participants
-      .map((p) => `"${p.code}","${p.name}","${new Date(p.createdAt).toLocaleString("hu-HU")}"`)
+      .map((p) => `"${p.code}","${p.name}","${new Date(p.createdAt).toLocaleString("hu-HU")}","${winnerIds.has(p.id) ? "Igen" : ""}"`)
       .join("\n");
     const blob = new Blob([bom + header + rows], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    const safeName = eventName.trim().replace(/[^a-zA-Z0-9áéíóöőúüűÁÉÍÓÖŐÚÜŰ\s-]/g, "").trim() || "resztvevok";
-    a.download = `${safeName}_resztvevok.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const exportWinnersCsv = () => {
-    const bom = "\ufeff";
-    const header = "Helyezés,Kód,Név\n";
-    const rows = winners
-      .map((w) => `"${w.drawOrder}","${w.code}","${w.name}"`)
-      .join("\n");
-    const blob = new Blob([bom + header + rows], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    const safeName = eventName.trim().replace(/[^a-zA-Z0-9áéíóöőúüűÁÉÍÓÖŐÚÜŰ\s-]/g, "").trim() || "nyertesek";
-    a.download = `${safeName}_nyertesek.csv`;
+    const safeName = eventName.trim().replace(/[^a-zA-Z0-9áéíóöőúüűÁÉÍÓÖŐÚÜŰ\s-]/g, "").trim() || "sorsolás";
+    a.download = `${safeName}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -502,6 +498,8 @@ export default function AdminPage() {
       setIsRaffling(false);
       if (res.ok) {
         setLatestWinner(data);
+        setQrGenerated(false);
+        setCurrentRoundUrl("");
         fetchAll();
       } else {
         setRaffleError(data.error || "Hiba a sorsolásnál");
@@ -514,9 +512,9 @@ export default function AdminPage() {
       <style dangerouslySetInnerHTML={{ __html: css }} />
 
       <header className="header">
-        <img src="/logo/logo.png" alt="BÁZIS" className="header-logo" />
+        <img src="/logo.png" alt="BÁZIS" className="header-logo" />
         <div className="header-title">Esemény Sorsoló</div>
-        <div className="header-sub">III. Szakmai és Nyílt Nap · 2026</div>
+        <div className="header-sub">III. Szakmai &amp; Nyílt Nap · 2026</div>
       </header>
 
       <div className="wrap">
@@ -548,12 +546,20 @@ export default function AdminPage() {
               </button>
             </div>
             {mounted && (
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10, marginTop: 20, visibility: qrGenerated ? "visible" : "hidden" }}>
-                <div className="qr-frame">
-                  <canvas ref={qrCanvasRef} />
+              <>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10, marginTop: 20, visibility: qrGenerated ? "visible" : "hidden", height: qrGenerated ? "auto" : 0, overflow: "hidden" }}>
+                  <div className="qr-frame">
+                    <canvas ref={qrCanvasRef} />
+                  </div>
+                  <div className="qr-url">{currentRoundUrl}</div>
                 </div>
-                <div className="qr-url">{currentRoundUrl}</div>
-              </div>
+                {!qrGenerated && (
+                  <div style={{ marginTop: 32, textAlign: "center", color: "var(--text-secondary)", fontSize: 14, lineHeight: 1.6 }}>
+                    <div style={{ fontSize: 36, marginBottom: 10 }}>🔲</div>
+                    <div>Nyomj a <strong>QR Generálás</strong> gombra<br />a regisztrációs QR kód létrehozásához.</div>
+                  </div>
+                )}
+              </>
             )}
           </div>
         )}
@@ -568,9 +574,6 @@ export default function AdminPage() {
             </div>
 
             <div className="row" style={{ marginBottom: 16 }}>
-              <button className="btn btn-outline" onClick={exportCsv} disabled={participants.length === 0}>
-                📥 CSV export
-              </button>
               <button className="btn btn-danger" onClick={deleteAll} disabled={participants.length === 0}>
                 🗑 Összes törlése
               </button>
@@ -634,7 +637,7 @@ export default function AdminPage() {
               <div className="card">
                 <div className="winners-header">
                   <div className="card-title" style={{ margin: 0 }}>🏆 Korábbi nyertesek</div>
-                  <button className="btn btn-outline" style={{ padding: "7px 14px", fontSize: "13px" }} onClick={exportWinnersCsv}>
+                  <button className="btn btn-outline" style={{ padding: "7px 14px", fontSize: "13px" }} onClick={exportCsv}>
                     📥 Export
                   </button>
                 </div>

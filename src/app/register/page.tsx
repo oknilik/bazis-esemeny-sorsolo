@@ -42,14 +42,15 @@ const css = `
     flex-direction: column;
     align-items: center;
     gap: 4px;
-    margin-bottom: 28px;
+    margin-bottom: 32px;
+    margin-top: 8px;
     text-align: center;
   }
   .brand-logo {
-    width: 110px;
+    width: 150px;
     height: auto;
     display: block;
-    margin-bottom: 6px;
+    margin-bottom: 14px;
   }
   .brand-name {
     font-size: 18px;
@@ -209,10 +210,15 @@ function RegisterForm() {
   const [error, setError] = useState<string | null>(null);
   const [code, setCode] = useState<string | null>(null);
   const [alreadyRegistered, setAlreadyRegistered] = useState(false);
+  const [savedCode, setSavedCode] = useState<string | null>(null);
 
   useEffect(() => {
-    if (roundId && localStorage.getItem(storageKey)) {
-      setAlreadyRegistered(true);
+    if (roundId) {
+      const stored = localStorage.getItem(storageKey);
+      if (stored) {
+        setAlreadyRegistered(true);
+        setSavedCode(stored);
+      }
     }
   }, [roundId, storageKey]);
 
@@ -232,7 +238,7 @@ function RegisterForm() {
       });
       if (res.ok) {
         const data = await res.json();
-        if (roundId) localStorage.setItem(storageKey, "1");
+        if (roundId) localStorage.setItem(storageKey, data.code);
         setCode(data.code);
       } else {
         const d = await res.json();
@@ -256,6 +262,12 @@ function RegisterForm() {
             <div className="already-sub">
               Ezen az eszközön már leadtál egy regisztrációt ehhez a sorsoláshoz.
             </div>
+            {savedCode && (
+              <div className="code-box">
+                <div className="code-label">A te kódod</div>
+                <div className="code-num">{savedCode}</div>
+              </div>
+            )}
           </div>
         ) : code ? (
           <div className="success-wrap">
@@ -273,7 +285,7 @@ function RegisterForm() {
         ) : (
           <>
             <div className="brand">
-              <img src="/logo/logo.png" alt="BÁZIS" className="brand-logo" />
+              <img src="/logo.png" alt="BÁZIS" className="brand-logo" />
               <div className="brand-name">BÁZIS</div>
               <div className="brand-sub">Regisztráció</div>
             </div>
